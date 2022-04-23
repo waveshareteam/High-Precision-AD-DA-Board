@@ -12,9 +12,7 @@ DAC_VREF = 5.0
 class DAC8532:
     def __init__(self):
         self.cs_pin = config.CS_DAC_PIN
-        # config.module_init()
         
-    
     def DAC8532_Write_Data(self, Channel, Data):
         config.digital_write(self.cs_pin, GPIO.LOW)#cs  0
         config.spi_writebyte([Channel, Data >> 8, Data & 0xff])
