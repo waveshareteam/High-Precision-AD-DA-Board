@@ -1,10 +1,6 @@
 import config
 import RPi.GPIO as GPIO
 
-
-ScanMode = 0
-
-
 # gain channel
 ADS1256_GAIN_E = {'ADS1256_GAIN_1' : 0, # GAIN   1
                   'ADS1256_GAIN_2' : 1,	# GAIN   2
@@ -129,27 +125,21 @@ class ADS1256:
         config.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
         config.delay_ms(1) 
 
-
+    def ADS1256_SetMode(self,Mode):
+        self.ScanMode=Mode
 
     def ADS1256_SetChannal(self, Channal):
-        if Channal > 7:
+        if Channal>7:
             return 0
-        self.ADS1256_WriteReg(REG_E['REG_MUX'], (Channal<<4) | (1<<3))
+        self.ADS1256_WriteReg(REG_E['REG_MUX'],(Channal<<4)|(1<<3))
 
     def ADS1256_SetDiffChannal(self, Channal):
-        if Channal == 0:
-            self.ADS1256_WriteReg(REG_E['REG_MUX'], (0 << 4) | 1) 	#DiffChannal  AIN0-AIN1
-        elif Channal == 1:
-            self.ADS1256_WriteReg(REG_E['REG_MUX'], (2 << 4) | 3) 	#DiffChannal   AIN2-AIN3
-        elif Channal == 2:
-            self.ADS1256_WriteReg(REG_E['REG_MUX'], (4 << 4) | 5) 	#DiffChannal    AIN4-AIN5
-        elif Channal == 3:
-            self.ADS1256_WriteReg(REG_E['REG_MUX'], (6 << 4) | 7) 	#DiffChannal   AIN6-AIN7
-
-    def ADS1256_SetMode(self, Mode):
-        ScanMode = Mode
+        if Channal>3:
+            return 0
+        self.ADS1256_WriteReg(REG_E['REG_MUX'],((2*Channal)<<4)|(2*Channal+1)) 	#DiffChannal set
 
     def ADS1256_init(self):
+        self.ADS1256_SetMode(0)
         if (config.module_init() != 0):
             return -1
         self.ADS1256_reset()
@@ -166,7 +156,6 @@ class ADS1256:
         self.ADS1256_WaitDRDY()
         config.digital_write(self.cs_pin, GPIO.LOW)#cs  0
         config.spi_writebyte([CMD['CMD_RDATA']])
-        # config.delay_ms(10)
 
         buf = config.spi_readbytes(3)
         config.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
@@ -178,30 +167,30 @@ class ADS1256:
         return read
  
     def ADS1256_GetChannalValue(self, Channel):
-        if(ScanMode == 0):# 0  Single-ended input  8 channel1 Differential input  4 channe 
-            if(Channel>=8):
+        if self.ScanMode == 0:# 0  Single-ended input  8 channel 1 Differential input 4 channel 
+            if Channel>7:
                 return 0
             self.ADS1256_SetChannal(Channel)
             self.ADS1256_WriteCmd(CMD['CMD_SYNC'])
-            # config.delay_ms(10)
             self.ADS1256_WriteCmd(CMD['CMD_WAKEUP'])
-            # config.delay_ms(200)
             Value = self.ADS1256_Read_ADC_Data()
         else:
-            if(Channel>=4):
+            if(Channel>3):
                 return 0
             self.ADS1256_SetDiffChannal(Channel)
             self.ADS1256_WriteCmd(CMD['CMD_SYNC'])
-            # config.delay_ms(10) 
             self.ADS1256_WriteCmd(CMD['CMD_WAKEUP'])
-            # config.delay_ms(10) 
             Value = self.ADS1256_Read_ADC_Data()
         return Value
         
     def ADS1256_GetAll(self):
-        ADC_Value = [0,0,0,0,0,0,0,0]
-        for i in range(0,8,1):
-            ADC_Value[i] = self.ADS1256_GetChannalValue(i)
+        if self.ScanMode==0:
+            ADC_Value = [0,0,0,0,0,0,0,0]
+            for i in range(0,8,1):
+                ADC_Value[i] = self.ADS1256_GetChannalValue(i)
+        else:
+            ADC_Value=[0,0,0,0]
+            for i in range(0,4,1):
+                ADC_Value[i]=self.ADS1256_GetChannalValue(i)
         return ADC_Value
 ### END OF FILE ###
-
