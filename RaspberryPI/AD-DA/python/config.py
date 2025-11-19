@@ -1,13 +1,4 @@
-# /*****************************************************************************
-# * | File        :	  EPD_1in54.py
-# * | Author      :   Waveshare team
-# * | Function    :   Hardware underlying interface
-# * | Info        :
-# *----------------
-# * |	This version:   V1.0
-# * | Date        :   2019-01-24
-# * | Info        :   
-# ******************************************************************************/
+# -*- coding: utf-8 -*-
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documnetation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -29,7 +20,7 @@
 
 
 import spidev
-import RPi.GPIO as GPIO
+import lgpio
 import time
 
 # Pin definition
@@ -41,12 +32,14 @@ DRDY_PIN        = 17
 # SPI device, bus = 0, device = 0
 SPI = spidev.SpiDev(0, 0)
 
+# lgpio handle
+h = None
+
 def digital_write(pin, value):
-    GPIO.output(pin, value)
+    lgpio.gpio_write(h, pin, value)
 
 def digital_read(pin):
-    return GPIO.input(DRDY_PIN)
-
+    return lgpio.gpio_read(h, pin)
 def delay_ms(delaytime):
     time.sleep(delaytime // 1000.0)
 
@@ -58,15 +51,33 @@ def spi_readbytes(reg):
     
 
 def module_init():
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setwarnings(False)
-    GPIO.setup(RST_PIN, GPIO.OUT)
-    GPIO.setup(CS_DAC_PIN, GPIO.OUT)
-    GPIO.setup(CS_PIN, GPIO.OUT)
-    #GPIO.setup(DRDY_PIN, GPIO.IN)
-    GPIO.setup(DRDY_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    global h
+    h = lgpio.gpiochip_open(0)
+
+    lgpio.gpio_claim_output(h, RST_PIN)
+    lgpio.gpio_claim_output(h, CS_DAC_PIN)
+    lgpio.gpio_claim_output(h, CS_PIN)
+    lgpio.gpio_claim_input(h, DRDY_PIN)
     SPI.max_speed_hz = 20000
     SPI.mode = 0b01
-    return 0;
+    return 0
+
+def module_exit():
+    """Clean up SPI and lgpio resources opened by module_init()."""
+    global h
+    try:
+        if SPI:
+            try:
+                SPI.close()
+            except Exception:
+                pass
+        if h is not None:
+            try:
+                lgpio.gpiochip_close(h)
+            except Exception:
+                pass
+            h = None
+    except Exception:
+        pass
 
 ### END OF FILE ###

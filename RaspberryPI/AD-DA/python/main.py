@@ -4,7 +4,7 @@
 import time
 import ADS1256
 import DAC8532
-import RPi.GPIO as GPIO
+import config
 
 
 try:
@@ -32,6 +32,10 @@ try:
         DAC.DAC8532_Out_Voltage(DAC8532.channel_B, 3.3 - temp)
 
 except :
-    GPIO.cleanup()
+    # clean up SPI and lgpio resources
+    try:
+        config.module_exit()
+    except Exception:
+        pass
     print ("\r\nProgram end     ")
     exit()

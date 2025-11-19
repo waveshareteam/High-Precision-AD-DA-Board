@@ -1,7 +1,5 @@
 import config
-import RPi.GPIO as GPIO
-
-
+import lgpio
 channel_A   = 0x30
 channel_B   = 0x34
 
@@ -16,9 +14,9 @@ class DAC8532:
         
     
     def DAC8532_Write_Data(self, Channel, Data):
-        config.digital_write(self.cs_pin, GPIO.LOW)#cs  0
+        config.digital_write(self.cs_pin, 0)#cs  0
         config.spi_writebyte([Channel, Data >> 8, Data & 0xff])
-        config.digital_write(self.cs_pin, GPIO.HIGH)#cs  0
+        config.digital_write(self.cs_pin, 1)#cs  0
         
     def DAC8532_Out_Voltage(self, Channel, Voltage):
         if((Voltage <= DAC_VREF) and (Voltage >= 0)):

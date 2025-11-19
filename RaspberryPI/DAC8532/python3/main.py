@@ -4,7 +4,6 @@
 
 import time
 import DAC8532
-import RPi.GPIO as GPIO
 
 
 try:
@@ -27,6 +26,6 @@ try:
             time.sleep(0.2)
     
 except :
-    GPIO.cleanup()
+    #GPIO.cleanup()
     print ("\r\nProgram end     ")
     exit()
